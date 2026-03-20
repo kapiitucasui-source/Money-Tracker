@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>To-Do List App</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#333333">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
+    <style>
+        body { background: #540654; padding: 40px 20px; font-family: 'Segoe UI', sans-serif; color: white; text-align: center; }
+        .container { max-width: 400px; margin: auto; }
+        h1 { color: #e8a4a4; margin-bottom: 30px; }
+        input { padding: 12px; border-radius: 25px; border: none; width: 70%; color: #333; outline: none; }
+        button { padding: 12px 20px; border-radius: 25px; border: none; background: #6277a8; color: white; cursor: pointer; font-weight: bold; }
+        ul { list-style: none; padding: 0; margin-top: 30px; }
+        li { background: white; color: #333; padding: 15px; margin: 10px 0; border-radius: 10px; cursor: pointer; text-align: left; display: flex; justify-content: space-between; align-items: center; }
+        li:hover { background: #ffebee; }
+        .delete-hint { font-size: 10px; color: #999; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>To-Do List</h1>
+        <input type="text" id="taskInput" placeholder="New Task...">
+        <button onclick="addTask()">Add</button>
+        <ul id="taskList"></ul>
+    </div>
+
+    <script>
+        const taskInput = document.getElementById('taskInput');
+        const taskList = document.getElementById('taskList');
+
+       
+        window.onload = () => {
+            const savedTasks = JSON.parse(localStorage.getItem('myTasks')) || [];
+            savedTasks.forEach(taskText => renderTask(taskText));
+        };
+
+       
+        function saveToStorage() {
+            const tasks = [];
+            document.querySelectorAll('li span').forEach(span => {
+                tasks.push(span.textContent);
+            });
+            localStorage.setItem('myTasks', JSON.stringify(tasks));
+        }
+
+        
+        function renderTask(taskText) {
+            const li = document.createElement('li');
+            li.innerHTML = `<span>${taskText}</span> <span class="delete-hint">Click to remove</span>`;
+            
+            li.onclick = () => {
+                li.remove();
+                saveToStorage(); 
+            };
+            
+            taskList.appendChild(li);
+        }
+
+        function addTask() {
+            const task = taskInput.value.trim();
+            if (task) {
+                renderTask(task);
+                saveToStorage(); 
+                taskInput.value = '';
+            }
+        }
+
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('service-worker.js')
+                .then(() => console.log("PWA Active"))
+                .catch(err => console.log("PWA Error", err));
+            });
+        }
+    </script>
+</body>
+</html>
