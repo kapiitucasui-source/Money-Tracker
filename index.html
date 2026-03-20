@@ -1,81 +1,151 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <title>To-Do List App</title>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#333333">
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
-    <style>
-        body { background: #540654; padding: 40px 20px; font-family: 'Segoe UI', sans-serif; color: white; text-align: center; }
-        .container { max-width: 400px; margin: auto; }
-        h1 { color: #e8a4a4; margin-bottom: 30px; }
-        input { padding: 12px; border-radius: 25px; border: none; width: 70%; color: #333; outline: none; }
-        button { padding: 12px 20px; border-radius: 25px; border: none; background: #6277a8; color: white; cursor: pointer; font-weight: bold; }
-        ul { list-style: none; padding: 0; margin-top: 30px; }
-        li { background: white; color: #333; padding: 15px; margin: 10px 0; border-radius: 10px; cursor: pointer; text-align: left; display: flex; justify-content: space-between; align-items: center; }
-        li:hover { background: #ffebee; }
-        .delete-hint { font-size: 10px; color: #999; }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Money Tracker</title>
+  <link rel="manifest" href="manifest.json">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      background: #471364;
+      text-align: center;
+    }
+    h1 { color: #a041cf; }
+    input, select, button {
+      padding: 10px;
+      margin: 5px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+    }
+    button {
+      background: #de56f6;
+      color: rgb(184, 38, 238);
+      cursor: pointer;
+      border: none;
+    }
+    button:hover { opacity: 0.9; }
+    ul {
+      list-style: none;
+      padding: 0;
+      max-width: 500px;
+      margin: 0 auto;
+    }
+    li {
+      background: #fff;
+      margin: 5px 0;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      display: flex;
+      justify-content: space-between;
+    }
+    .income { color: #3852b8; }
+    .expense { color: #e87569; }
+    #summary {
+      margin-top: 20px;
+      font-weight: bold;
+    }
+    .error-message {
+      color: rgb(225, 42, 42);
+      font-size: 0.9em;
+      margin: 5px 0;
+      display: none;
+    }
+  </style>
 </head>
 <body>
+  <h1>Money Tracker</h1>
+  <input id="desc" type="text" placeholder="Description" required>
+  <input id="amount" type="number" step="0.01" placeholder="Amount" required>
+  <select id="type">
+    <option value="income">Income</option>
+    <option value="expense">Expense</option>
+  </select>
+  <button onclick="addTransaction()">Add</button>
+  <button onclick="resetAll()">Reset</button>
 
-    <div class="container">
-        <h1>To-Do List</h1>
-        <input type="text" id="taskInput" placeholder="New Task...">
-        <button onclick="addTask()">Add</button>
-        <ul id="taskList"></ul>
-    </div>
+  <div class="error-message" id="error">Please enter a valid description and positive amount!</div>
+  <ul id="transactions"></ul>
+  <div id="summary">Income: ₱0.00 | Expense: ₱0.00 | Balance: ₱0.00</div>
 
-    <script>
-        const taskInput = document.getElementById('taskInput');
-        const taskList = document.getElementById('taskList');
+  <script>
+    let transactions = [];
 
-       
-        window.onload = () => {
-            const savedTasks = JSON.parse(localStorage.getItem('myTasks')) || [];
-            savedTasks.forEach(taskText => renderTask(taskText));
-        };
+    const formatCurrency = (num) => '₱${num.toFixed(2)}';
 
-       
-        function saveToStorage() {
-            const tasks = [];
-            document.querySelectorAll('li span').forEach(span => {
-                tasks.push(span.textContent);
-            });
-            localStorage.setItem('myTasks', JSON.stringify(tasks));
-        }
+    function addTransaction() {
+      const desc = document.getElementById('desc').value.trim();
+      const amount = parseFloat(document.getElementById('amount').value);
+      const type = document.getElementById('type').value;
+      const errorEl = document.getElementById('error');
 
+    
+      if (!desc || isNaN(amount) || amount <= 0) {
+        errorEl.style.display = 'block';
+        setTimeout(() => errorEl.style.display = 'none', 3000);
+        return;
+      }
+
+      transactions.push({
+        desc,
+        amount: Math.round(amount * 100) / 100,
+        type
+      });
+
+      renderTransactions();
+      saveData();
+      document.getElementById('desc').value = '';
+      document.getElementById('amount').value = '';
+    }
+
+    function resetAll() {
+      if (confirm('Are you sure you want to delete all transactions?')) {
+        transactions = [];
+        renderTransactions();
+        saveData();
+      }
+    }
+    function renderTransactions() {
+      const list = document.getElementById('transactions');
+      list.innerHTML = '';
+      let income = 0, expense = 0;
+
+      transactions.forEach(t => {
+        t.type === 'income' ? income += t.amount : expense += t.amount;
         
-        function renderTask(taskText) {
-            const li = document.createElement('li');
-            li.innerHTML = `<span>${taskText}</span> <span class="delete-hint">Click to remove</span>`;
-            
-            li.onclick = () => {
-                li.remove();
-                saveToStorage(); 
-            };
-            
-            taskList.appendChild(li);
-        }
+        const li = document.createElement('li');
+        li.innerHTML = '${t.desc} - <span class="${t.type}">${formatCurrency(t.amount)}</span>';
+        list.appendChild(li);
+      });
 
-        function addTask() {
-            const task = taskInput.value.trim();
-            if (task) {
-                renderTask(task);
-                saveToStorage(); 
-                taskInput.value = '';
-            }
-        }
+      document.getElementById('summary').textContent = 
+        'Income: ${formatCurrency(income)} | Expense: ${formatCurrency(expense)} | Balance: ${formatCurrency(income - expense)}';
+    }
 
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('service-worker.js')
-                .then(() => console.log("PWA Active"))
-                .catch(err => console.log("PWA Error", err));
-            });
-        }
-    </script>
+    function saveData() {
+      try {
+        localStorage.setItem('transactions', JSON.stringify(transactions));
+      } catch (err) {
+        console.error('Failed to save data:', err);
+      }
+    }
+
+    window.onload = () => {
+      try {
+        const saved = localStorage.getItem('transactions');
+        if (saved) transactions = JSON.parse(saved);
+        renderTransactions();
+      } catch (err) {
+        console.error('Failed to load data:', err);
+      }
+
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('service-worker.js')
+          .catch(err => console.error('Service worker registration failed:', err));
+      }
+    };
+  </script>
 </body>
 </html>
